@@ -1,0 +1,35 @@
+name: Static Rush Android APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Static-Rush/**'
+      - '.github/workflows/static-rush-android.yml'
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Static-Rush
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK 35
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compile APK
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Static-Rush-Watch7-debug
+          path: Static-Rush/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
