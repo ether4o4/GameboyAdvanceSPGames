@@ -8,6 +8,7 @@ MAKER_CODE := WT
 
 ARCH := -mthumb -mthumb-interwork
 CFLAGS := -g -Wall -Wextra -O2 -mcpu=arm7tdmi -mtune=arm7tdmi -fomit-frame-pointer $(ARCH)
+CFLAGS += $(INCLUDE)
 ASFLAGS := $(ARCH)
 LDFLAGS = -g $(ARCH) -Wl,-Map,$(notdir $@).map
 LIBS := -lgba
@@ -43,7 +44,5 @@ else
 
 .PHONY: all
 all: $(OUTPUT).gba
-
-$(OUTPUT).gba
 
 endif
