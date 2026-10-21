@@ -6,6 +6,8 @@ rom = pathlib.Path(sys.argv[1])
 data = rom.read_bytes()
 if not 32_768 <= len(data) <= 32 * 1024 * 1024:
     raise SystemExit(f"unexpected GBA ROM size: {len(data)} bytes")
+if len(data) & (len(data) - 1):
+    raise SystemExit(f"GBA ROM size should be a power of two: {len(data)} bytes")
 if data[3] != 0xEA:
     raise SystemExit(f"GBA cartridge entry should begin with ARM branch, found top byte 0x{data[3]:02x}")
 title = data[0xA0:0xAC].decode("ascii", errors="replace").rstrip("\0 ")

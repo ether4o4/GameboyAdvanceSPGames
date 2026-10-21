@@ -34,6 +34,7 @@ export LIBPATHS := $(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 .PHONY: all $(BUILD) clean
 
 all: $(BUILD)
+	python3 tools/pad_gba.py $(TARGET).gba
 
 $(BUILD):
 	@mkdir -p $@
