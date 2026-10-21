@@ -1,0 +1,6 @@
+build/
+*.elf
+*.gba
+*.map
+__pycache__/
+*.py[cod]

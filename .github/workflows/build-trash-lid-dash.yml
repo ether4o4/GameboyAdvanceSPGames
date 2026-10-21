@@ -1,0 +1,66 @@
+name: Trash Lid Dash GBA build
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - 'Trash-Lid-Dash/**'
+      - '.github/workflows/build-trash-lid-dash.yml'
+  pull_request:
+    paths:
+      - 'Trash-Lid-Dash/**'
+      - '.github/workflows/build-trash-lid-dash.yml'
+  workflow_dispatch:
+
+jobs:
+  model-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run movement, jump, collision, and restart tests
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -O2 \
+            Trash-Lid-Dash/source/game_model.c \
+            Trash-Lid-Dash/tests/game_model_test.c \
+            -o /tmp/trash-lid-dash-model-test
+          /tmp/trash-lid-dash-model-test
+
+  build-rom:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:20241104
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build GBA cartridge image
+        run: make -C Trash-Lid-Dash clean all
+      - name: Validate cartridge header and size
+        run: python3 Trash-Lid-Dash/tools/verify_gba.py Trash-Lid-Dash/TrashLidDash.gba
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trash-Lid-Dash-GBA
+          path: Trash-Lid-Dash/TrashLidDash.gba
+          if-no-files-found: error
+
+  mgba-smoke:
+    runs-on: ubuntu-latest
+    needs: build-rom
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Trash-Lid-Dash-GBA
+          path: /tmp/Trash-Lid-Dash
+      - name: Install desktop emulator build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake zlib1g-dev
+      - name: Build mGBA desktop smoke-test runner
+        run: |
+          git clone --depth 1 --branch 0.10.5 https://github.com/mgba-emu/mgba.git /tmp/mgba
+          cmake -S /tmp/mgba -B /tmp/mgba/build \
+            -DBUILD_QT=OFF -DBUILD_SDL=OFF -DBUILD_LIBRETRO=OFF \
+            -DBUILD_PERF=ON -DBUILD_TEST=OFF -DBUILD_SUITE=OFF \
+            -DBUILD_STATIC=OFF -DBUILD_SHARED=ON \
+            -DUSE_FFMPEG=OFF -DUSE_PNG=OFF -DUSE_LIBZIP=OFF \
+            -DUSE_SQLITE3=OFF -DUSE_LUA=OFF -DUSE_FREETYPE=OFF \
+            -DUSE_JSON_C=OFF -DUSE_ELF=OFF -DUSE_MINIZIP=OFF
+          cmake --build /tmp/mgba/build --target mgba-perf --parallel 2
+      - name: Run the ROM for 180 frames in desktop mGBA
+        run: /tmp/mgba/build/mgba-perf -F 180 -N /tmp/Trash-Lid-Dash/TrashLidDash.gba
