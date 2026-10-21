@@ -12,7 +12,7 @@ CFLAGS += $(INCLUDE)
 ASFLAGS := $(ARCH)
 LDFLAGS = -g $(ARCH) -Wl,-Map,$(notdir $@).map
 LIBS := -lgba
-LIBDIRS := $(LIBGBA)
+LIBDIRS = $(LIBGBA)
 
 include $(DEVKITARM)/gba_rules
 
@@ -24,7 +24,8 @@ export DEPSDIR := $(CURDIR)/$(BUILD)
 export LD := $(CC)
 
 CFILES := $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-export OFILES := $(CFILES:.c=.o)
+export OFILES_SOURCES := $(CFILES:.c=.o)
+export OFILES := $(OFILES_SOURCES)
 export INCLUDE := $(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
                   $(foreach dir,$(LIBDIRS),-I$(dir)/include) \
                   -I$(CURDIR)/$(BUILD)
@@ -45,5 +46,11 @@ else
 
 .PHONY: all
 all: $(OUTPUT).gba
+
+$(OUTPUT).gba: $(OUTPUT).elf
+$(OUTPUT).elf: $(OFILES)
+$(OFILES_SOURCES):
+
+-include $(DEPSDIR)/*.d
 
 endif
